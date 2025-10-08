@@ -1,0 +1,132 @@
+# Decentralized Supplier Performance Management System
+A blockchain-based reputation scoring platform built on Stacks/Clarity that enables transparent performance tracking for suppliers through multi-dimensional metrics.
+
+## Overview
+This smart contract provides a trustless, immutable system for managing supplier reputations. Authorized reviewers can submit evaluations across multiple dimensions, and the contract automatically calculates weighted reputation scores that are permanently recorded on the blockchain.
+
+## Key Features
+- **Supplier Registration**: Suppliers can self-register with their business name
+- **Multi-Dimensional Scoring**: Evaluations across three key metrics:
+  - Delivery Performance (40% weight)
+  - Product Quality (40% weight)
+  - Communication Effectiveness (20% weight)
+- **Authorized Reviewers**: Only administrator-approved reviewers can submit evaluations
+- **Rolling Averages**: Automatic calculation of average scores across all reviews
+- **Immutable Records**: All evaluations are permanently stored on-chain
+- **Transparent Scoring**: Public read access to supplier profiles and metrics
+
+## Contract Architecture
+### Data Structures
+
+#### Supplier Profiles
+Stores comprehensive information for each registered supplier:
+- Business name
+- Overall reputation score
+- Total reviews received
+- Average scores per dimension
+- Account status
+- Registration block height
+
+#### Performance Evaluations
+Individual review records with:
+- Ratings for each dimension (0-100)
+- Reviewer comments (up to 500 characters)
+- Submission timestamp
+
+#### Authorization Registry
+Maintains list of approved reviewers with permission to submit evaluations
+
+## Scoring Algorithm
+The overall reputation score is calculated using a weighted average:
+```
+Reputation = (Delivery × 0.40) + (Quality × 0.40) + (Communication × 0.20)
+```
+Each dimension uses rolling averages that update with every new review.
+
+## Public Functions
+### Supplier Management
+
+#### `register-as-supplier`
+```clarity
+(register-as-supplier (business-name (string-ascii 50)))
+```
+Allows a supplier to register on the platform with their business name. Initial reputation score is set to 50.
+
+#### `toggle-supplier-status`
+```clarity
+(toggle-supplier-status (supplier-address principal) (active-status bool))
+```
+**Admin only**. Activates or deactivates a supplier account.
+
+### Review Management
+
+#### `submit-supplier-evaluation`
+```clarity
+(submit-supplier-evaluation 
+  (supplier-address principal)
+  (delivery-timeliness-rating uint)
+  (product-quality-rating uint)
+  (communication-quality-rating uint)
+  (reviewer-comments (string-utf8 500)))
+```
+**Authorized reviewers only**. Submits a comprehensive evaluation for a supplier. All ratings must be within the configured range (default: 0-100).
+
+### Authorization Management
+
+#### `grant-reviewer-authorization`
+```clarity
+(grant-reviewer-authorization (reviewer-address principal))
+```
+**Admin only**. Grants review submission rights to an address.
+
+#### `revoke-reviewer-authorization`
+```clarity
+(revoke-reviewer-authorization (reviewer-address principal))
+```
+**Admin only**. Revokes review submission rights from an address.
+
+### Configuration
+#### configure-score-range
+```clarity
+(configure-score-range (minimum-value uint) (maximum-value uint))
+```
+**Admin only**. Updates the valid score range for evaluations.
+
+## Read-Only Functions
+### get-supplier-profile
+Returns complete profile information for a supplier.
+
+### get-performance-evaluation
+Retrieves a specific evaluation by evaluator, supplier, and sequence number.
+
+### get-overall-reputation
+Returns the current overall reputation score for a supplier.
+
+### get-detailed-metrics
+Returns breakdown of average scores across all dimensions plus total review count.
+
+### check-reviewer-authorization
+Checks if an address is authorized to submit reviews.
+
+### get-score-range-configuration
+Returns the current minimum and maximum score thresholds.
+
+### get-evaluation-count
+Returns the total number of evaluations received by a supplier.
+
+### compute-weighted-reputation
+Calculates the weighted reputation score given three dimension scores.
+
+## Error Codes
+
+| Code | Constant | Description |
+|------|----------|-------------|
+| u100 | ERR-UNAUTHORIZED-ACCESS | Caller lacks required permissions |
+| u101 | ERR-SUPPLIER-NOT-FOUND | Supplier address not registered |
+| u102 | ERR-SUPPLIER-ALREADY-REGISTERED | Supplier already exists |
+| u103 | ERR-INVALID-SCORE-VALUE | Score outside valid range |
+| u104 | ERR-REVIEWER-NOT-AUTHORIZED | Reviewer not authorized |
+| u105 | ERR-INVALID-RANGE-PARAMETERS | Invalid min/max configuration |
+| u106 | ERR-REVIEW-NOT-FOUND | Evaluation record not found |
+| u107 | ERR-INVALID-BUSINESS-NAME | Invalid business name |
+| u108 | ERR-INVALID-PRINCIPAL | Invalid principal address |
